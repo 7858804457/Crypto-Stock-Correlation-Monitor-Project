@@ -4,9 +4,17 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
-st.set_page_config(page_title="Crypto-Stock Correlation Monitor", layout="wide")
+# --------------------------------------------------
+# Page Configuration
+# --------------------------------------------------
+st.set_page_config(
+    page_title="Crypto–Stock Correlation Monitor",
+    layout="wide"
+)
 
-# --- Sidebar Inputs ---
+# --------------------------------------------------
+# Sidebar Configuration
+# --------------------------------------------------
 st.sidebar.header("Configuration")
 
 crypto = st.sidebar.multiselect(
@@ -21,43 +29,89 @@ stocks = st.sidebar.multiselect(
     default=["AAPL", "TSLA"]
 )
 
-period = st.sidebar.selectbox("Data Period", ["1mo", "3mo", "6mo", "1y"], index=1)
-interval = st.sidebar.selectbox("Interval", ["1h", "4h", "1d"], index=2)
+period = st.sidebar.selectbox(
+    "Data Period",
+    ["1mo", "3mo", "6mo", "1y"],
+    index=1
+)
 
+interval = st.sidebar.selectbox(
+    "Interval",
+    ["1h", "4h", "1d"],
+    index=2
+)
+
+# --------------------------------------------------
+# Title
+# --------------------------------------------------
 st.title("📈 Crypto–Stock Correlation Monitor")
 
-# --- Download Data ---
+# --------------------------------------------------
+# Download Market Data
+# --------------------------------------------------
 symbols = crypto + stocks
-data = yf.download(symbols, period=period, interval=interval)["Close"]
 
-st.subheader("Price Data (Closing Values)")
+@st.cache_data(show_spinner=False)
+def load_data(symbols, period, interval):
+    data = yf.download(
+        symbols,
+        period=period,
+        interval=interval,
+        auto_adjust=False
+    )["Close"]
+    return data
+
+data = load_data(symbols, period, interval)
+
+# --------------------------------------------------
+# Display Price Data
+# --------------------------------------------------
+st.subheader("📊 Price Data (Closing Prices)")
 st.dataframe(data.tail())
 
-# --- Compute Correlation ---
+# --------------------------------------------------
+# Correlation Heatmap
+# --------------------------------------------------
 corr = data.corr()
 
-st.subheader("Correlation Heatmap")
+st.subheader("🔥 Correlation Heatmap")
+
 fig = px.imshow(
     corr,
     text_auto=True,
     color_continuous_scale="RdBu",
     title="Correlation Matrix"
 )
+
 st.plotly_chart(fig, use_container_width=True)
 
-# --- Rolling Correlation Example ---
+# --------------------------------------------------
+# Rolling Correlation (Corrected & Robust)
+# --------------------------------------------------
 if len(crypto) > 0 and len(stocks) > 0:
+
     c1 = crypto[0]
     s1 = stocks[0]
 
-    st.subheader(f"Rolling Correlation: {c1} vs {s1} (30-period)")
+    st.subheader(f"🔁 Rolling Correlation: {c1} vs {s1}")
 
-    rolling_corr = data[c1].rolling(30).corr(data[s1])
+    # Align crypto & stock data
+    pair_data = data[[c1, s1]].dropna()
 
-    fig2 = px.line(
-        rolling_corr,
-        title=f"Rolling Correlation: {c1} vs {s1}",
-        labels={"value": "Correlation"}
-    )
-    st.plotly_chart(fig2, use_container_width=True)
+    # Adaptive rolling window
+    window = min(30, len(pair_data) // 2)
 
+    if window >= 5:
+        rolling_corr = pair_data[c1].rolling(window).corr(pair_data[s1])
+
+        fig2 = px.line(
+            rolling_corr,
+            title=f"Rolling Correlation ({window}-period window)",
+            labels={"value": "Correlation", "index": "Date"}
+        )
+
+        st.plotly_chart(fig2, use_container_width=True)
+    else:
+        st.warning(
+            "⚠️ Not enough overlapping data points to compute rolling correlation."
+        )
