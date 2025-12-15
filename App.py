@@ -4,17 +4,15 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
-# --------------------------------------------------
 # Page Configuration
-# --------------------------------------------------
+
 st.set_page_config(
     page_title="Crypto–Stock Correlation Monitor",
     layout="wide"
 )
 
-# --------------------------------------------------
 # Sidebar Configuration
-# --------------------------------------------------
+
 st.sidebar.header("Configuration")
 
 crypto = st.sidebar.multiselect(
@@ -41,14 +39,13 @@ interval = st.sidebar.selectbox(
     index=2
 )
 
-# --------------------------------------------------
 # Title
-# --------------------------------------------------
+
 st.title("📈 Crypto–Stock Correlation Monitor")
 
-# --------------------------------------------------
+
 # Download Market Data
-# --------------------------------------------------
+
 symbols = crypto + stocks
 
 @st.cache_data(show_spinner=False)
@@ -63,18 +60,16 @@ def load_data(symbols, period, interval):
 
 data = load_data(symbols, period, interval)
 
-# --------------------------------------------------
 # Display Price Data
-# --------------------------------------------------
+
 st.subheader("📊 Price Data (Closing Prices)")
 st.dataframe(data.tail())
 
-# --------------------------------------------------
+
 # Correlation Heatmap
-# --------------------------------------------------
 corr = data.corr()
 
-st.subheader("🔥 Correlation Heatmap")
+st.subheader(" Correlation Heatmap")
 
 fig = px.imshow(
     corr,
@@ -85,9 +80,9 @@ fig = px.imshow(
 
 st.plotly_chart(fig, use_container_width=True)
 
-# --------------------------------------------------
+
 # Rolling Correlation (Corrected & Robust)
-# --------------------------------------------------
+
 if len(crypto) > 0 and len(stocks) > 0:
 
     c1 = crypto[0]
@@ -113,5 +108,5 @@ if len(crypto) > 0 and len(stocks) > 0:
         st.plotly_chart(fig2, use_container_width=True)
     else:
         st.warning(
-            "⚠️ Not enough overlapping data points to compute rolling correlation."
+            " Not enough overlapping data points to compute rolling correlation."
         )
